@@ -1,22 +1,25 @@
 import { useState } from "react";
-import { askAIJSON } from "./iaService";
-import type { HiveData } from "./utils/types/hive";
-import { isHiveData, isHiveDataValid } from "./utils/validators/hiveValidator";
+import { askHiveAI } from "./iaService";
+import type { HiveData } from "./utils/schemas/hiveSchema";
+// import type { HiveData } from "./utils/types/hive";
+// import { isHiveData, isHiveDataValid } from "./utils/validators/hiveValidator";
 
 function BeehiveCheck() {
   const [hiveNumber, setHiveNumber] = useState("");
   const [data, setData] = useState<HiveData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCheck() {
     setLoading(true);
-    const prompt = `Create JSON for a beehive check. Fields: hiveNumber (number), strength (1-5), queenStatus (good/medium/bad), honey (kg). Use hiveNumber ${hiveNumber}.  Provide only JSON.`;
-    const result = await askAIJSON(prompt);
-
-    if (isHiveData(result) && isHiveDataValid(result)) {
+    const prompt = `Create JSON for a beehive check. Fields: hiveNumber (number), strength (1-5), queenStatus (present/absent/unknown), honey (kg). Use hiveNumber ${hiveNumber}.  Provide only JSON.`;
+    try {
+      const result = await askHiveAI(prompt);
       setData(result);
-    } else {
-      console.error("Invalid hive data received from AI");
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Invalid response from AI.");
     }
     setLoading(false);
   }
@@ -35,6 +38,7 @@ function BeehiveCheck() {
       </button>
 
       {loading && <p>Thinking...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {data && (
         <div>
