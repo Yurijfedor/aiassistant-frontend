@@ -1,25 +1,55 @@
 import { HiveSchema } from "./utils/schemas/hiveSchema";
+import type {
+  StreamHandlers,
+  StreamController,
+} from "./utils/types/StreamHandler";
 
-export async function askAi(prompt: string): Promise<string> {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+export function askAiStream(
+  prompt: string,
+  handlers: StreamHandlers,
+): StreamController {
+  const controller = new AbortController();
+
+  fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_APP_OPENAI_API_KEY}`,
     },
+    signal: controller.signal,
     body: JSON.stringify({
       model: "gpt-4o-mini",
+      stream: true,
       messages: [
-        { role: "assistant", content: "You are a helpful assistent." },
+        { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: prompt },
       ],
     }),
-  });
+  })
+    .then(async (res) => {
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No stream");
 
-  const data = await response.json();
-  console.log(data);
+      const decoder = new TextDecoder();
 
-  return data.choices[0].message.content;
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        handlers.onChunk(decoder.decode(value));
+      }
+
+      handlers.onDone?.();
+    })
+    .catch((err) => {
+      if (err.name !== "AbortError") {
+        handlers.onError?.(err);
+      }
+    });
+
+  return {
+    cancel: () => controller.abort(),
+  };
 }
 
 export async function askAIJSON(

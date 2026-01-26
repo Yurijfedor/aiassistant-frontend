@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { askAi } from "./iaService";
+import { useRef, useState } from "react";
+import { askAiStream } from "./iaService";
 import type { AIStatus } from "./utils/types/aiStatus";
-import { fakeStream } from "./utils/functions/fakeStream";
+// import { fakeStream } from "./utils/functions/fakeStream";
+import type { StreamController } from "./utils/types/StreamHandler";
 
 function AiAssistant() {
   const [question, setQuestion] = useState("");
@@ -10,26 +11,41 @@ function AiAssistant() {
   const [status, setStatus] = useState<AIStatus>("idle");
   const [output, setOutput] = useState("");
   const [cancelled, setCancelled] = useState(false);
+  const streamRef = useRef<StreamController | null>(null);
 
   async function handleAsk() {
-    try {
-      setStatus("thinking");
-      setOutput("");
+    streamRef.current?.cancel();
 
-      const result = await askAi(question);
+    streamRef.current = askAiStream(question, {
+      onChunk: (chunk) => setOutput((prev) => prev + chunk),
+      onDone: () => setStatus("done"),
+      onError: () => setStatus("error"),
+    });
 
-      setStatus("streaming");
+    setStatus("streaming");
+    // try {
+    //   setStatus("thinking");
+    //   setOutput("");
 
-      await fakeStream(
-        JSON.stringify(result, null, 2),
-        (chunk) => setOutput((prev) => prev + chunk),
-        { cancelled: () => cancelled },
-      );
+    //   const result = await askAi(question);
 
-      setStatus("done");
-    } catch {
-      setStatus("error");
-    }
+    //   setStatus("streaming");
+
+    //   await fakeStream(
+    //     JSON.stringify(result, null, 2),
+    //     (chunk) => setOutput((prev) => prev + chunk),
+    //     { cancelled: () => cancelled },
+    //   );
+
+    //   setStatus("done");
+    // } catch {
+    //   setStatus("error");
+    // }
+  }
+
+  function handleCancel() {
+    streamRef.current?.cancel();
+    setStatus("idle");
   }
 
   return (
@@ -45,11 +61,7 @@ function AiAssistant() {
       </button>
       {status === "streaming" && (
         <button
-          onClick={() => {
-            setCancelled(true);
-            setStatus("idle");
-            return;
-          }}
+          onClick={handleCancel}
           disabled={status !== "streaming" && !cancelled}
         >
           Cancel
