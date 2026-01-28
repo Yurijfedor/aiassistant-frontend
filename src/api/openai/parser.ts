@@ -20,22 +20,25 @@ export function parseOpenAIStreamResponse(
     const lines = buffer.split("\n");
     buffer = lines.pop() || "";
     for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const data = line.slice(6);
-        if (data === "[DONE]") {
-          handlers.onDone?.();
-          return;
+      if (!line.startsWith("data: ")) continue;
+      const dataLine = line.slice(6).trim();
+      if (!dataLine) continue;
+      if (dataLine === "[DONE]") {
+        handlers.onDone?.();
+        cancel();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(dataLine);
+        const delta = parsed?.choices?.[0]?.delta?.content;
+        if (typeof delta === "string") {
+          handlers.onChunk(delta);
         }
-        try {
-          const parsed = JSON.parse(data);
-          handlers.onChunk(parsed.choices[0].delta.content || "");
-        } catch (e) {
-          handlers.onError?.(e);
-        }
+      } catch (e) {
+        handlers.onError?.(e);
       }
     }
   };
-
   const readLoop = async () => {
     try {
       while (!cancelled) {

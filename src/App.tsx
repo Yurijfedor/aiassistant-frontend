@@ -1,5 +1,5 @@
 import UserCard from "./UserCard";
-import AiAssistant from "./AIAssistant";
+import AiAssistant from "./components/AIAssistant";
 import BeehiveCheck from "./BeehiveCheck";
 import "./App.css";
 

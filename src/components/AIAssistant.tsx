@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import { askAiStream } from "./api/openai/stream";
-import type { AIStatus } from "./utils/types/aiStatus";
-import type { StreamController } from "./utils/types/StreamHandler";
+import { askAiStream } from "../api/openai/stream";
+import type { AIStatus } from "../utils/types/aiStatus";
+import type { StreamController } from "../utils/types/StreamHandler";
 
 function AiAssistant() {
   const [question, setQuestion] = useState("");
@@ -11,6 +11,8 @@ function AiAssistant() {
 
   async function handleAsk() {
     streamRef.current?.cancel();
+
+    setOutput("");
 
     streamRef.current = askAiStream(question, {
       onChunk: (chunk) => {
@@ -36,7 +38,7 @@ function AiAssistant() {
         onChange={(e) => setQuestion(e.target.value)}
         placeholder="Ask something ..."
       />
-      <button onClick={handleAsk} disabled={status === "thinking"}>
+      <button onClick={handleAsk} disabled={status === "streaming"}>
         Ask AI
       </button>
       {status === "streaming" && (
@@ -44,7 +46,7 @@ function AiAssistant() {
           Cancel
         </button>
       )}
-      {status === "thinking" && <p>🧠 AI is thinking...</p>}
+      {status === "streaming" && <p>🧠 AI is thinking...</p>}
       {status === "streaming" && <pre>{output}</pre>}
       {status === "done" && (
         <p>

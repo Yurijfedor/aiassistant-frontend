@@ -1,73 +1,134 @@
-# React + TypeScript + Vite
+# AI Streaming Module
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 1. Purpose
 
-Currently, two official plugins are available:
+This module implements **streaming interaction with the OpenAI API** and provides:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- real-time text streaming (SSE)
+- request cancellation support
+- error handling
+- clean integration with a React UI
 
-## React Compiler
+The module is designed so that **the UI is completely decoupled from OpenAI API details**.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 2. Folder Structure
 
-## Expanding the ESLint configuration
+api/
+└── openai/
+├── types.ts // public streaming types
+├── stream.ts // HTTP + AbortController
+├── parser.ts // SSE stream parser
+components/
+└── AiAssistant.tsx // UI component
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 3. Data Types
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### `StreamHandlers`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```ts
+export type StreamHandlers = {
+  onChunk: (chunk: string) => void;
+  onDone?: () => void;
+  onError?: (error: unknown) => void;
+};
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Description:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+onChunk — called for each received text chunk
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+onDone — called when the stream finishes or is cancelled
+
+onError — called on network or parsing errors
+
+### StreamController
+
+```ts
+export type StreamController = {
+  cancel: () => void;
+};
 ```
+
+Used by the UI to manually stop the stream.
+
+## 4. API: askAiStream
+
+```ts
+askAiStream(prompt: string, handlers: StreamHandlers): StreamController
+```
+
+### Description
+
+Sends a prompt to OpenAI and starts processing a streaming response.
+
+### Lifecycle
+
+- UI calls askAiStream
+
+- AbortController is created
+
+- fetch request is sent with stream: true
+
+- parser.ts consumes the SSE stream
+
+- UI receives partial text via onChunk
+
+- On completion or cancel → onDone
+
+## 5. SSE Parser (parser.ts)
+
+### Responsibility
+
+- reads from ReadableStream
+
+- buffers incomplete lines
+
+- processes data: {...} messages
+
+- ignores malformed or partial chunks
+
+- correctly terminates on [DONE]
+
+### Key Principles
+
+- does not throw on every malformed chunk
+
+- UI is unaware of SSE formatting
+
+- parser has no dependency on React
+
+## 6. UI Integration (AiAssistant)
+
+### Data Flow
+
+User input
+↓
+askAiStream()
+↓
+onChunk → setOutput
+↓
+onDone → status = "done"
+
+## 7. Cancellation Handling
+
+- cancel():
+
+- calls AbortController.abort()
+
+- terminates the SSE stream
+
+- triggers onDone
+
+This guarantees the UI always reaches a final consistent state.
+
+## Final Notes
+
+### This module demonstrates:
+
+- separation of concerns
+
+- controllable streaming lifecycle
+
+- production-oriented API design
+
+It can be safely reused or extended when moving streaming logic to a backend service.

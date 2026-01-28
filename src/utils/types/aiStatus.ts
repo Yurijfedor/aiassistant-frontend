@@ -1,1 +1,1 @@
-export type AIStatus = "idle" | "thinking" | "streaming" | "done" | "error";
+export type AIStatus = "idle" | "streaming" | "done" | "error";

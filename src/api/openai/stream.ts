@@ -29,12 +29,17 @@ export function askAiStream(
       await parseOpenAIStreamResponse(res.body, handlers);
     })
     .catch((err) => {
-      if (err.name !== "AbortError") {
-        handlers.onError?.(err);
+      if (err.name === "AbortError") {
+        handlers.onDone?.();
+        return;
       }
+      handlers.onError?.(err);
     });
 
   return {
-    cancel: () => controller.abort(),
+    cancel: () => {
+      controller.abort();
+      handlers.onDone?.();
+    },
   };
 }
