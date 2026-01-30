@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { askAiStream } from "../api/openai/stream";
-import type { AIStatus } from "../utils/types/aiStatus";
-import type { StreamController } from "../utils/types/StreamHandler";
+import type { AIStatus } from "../api/openai/types";
+import type { StreamController } from "../api/openai/types";
 
 function AiAssistant() {
   const [question, setQuestion] = useState("");

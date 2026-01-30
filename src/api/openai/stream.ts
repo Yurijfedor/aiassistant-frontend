@@ -1,5 +1,4 @@
 import type { StreamController, StreamHandlers } from "./types";
-
 import { parseOpenAIStreamResponse } from "./parser";
 
 export function askAiStream(
@@ -8,21 +7,19 @@ export function askAiStream(
 ): StreamController {
   const controller = new AbortController();
 
-  fetch("https://api.openai.com/v1/chat/completions", {
+  const backendUrl = import.meta.env.VITE_APP_BACKEND_URL;
+
+  if (!backendUrl) {
+    throw new Error("VITE_BACKEND_URL is not defined");
+  }
+
+  fetch(backendUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_APP_OPENAI_API_KEY}`,
     },
+    body: JSON.stringify({ input: prompt }),
     signal: controller.signal,
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      stream: true,
-      messages: [
-        { role: "system", content: "You are a helpful assistant." },
-        { role: "user", content: prompt },
-      ],
-    }),
   })
     .then(async (res) => {
       if (!res.body) throw new Error("Response body is null");

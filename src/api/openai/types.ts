@@ -7,3 +7,5 @@ export type StreamHandlers = {
 export type StreamController = {
   cancel: () => void;
 };
+
+export type AIStatus = "idle" | "streaming" | "done" | "error";
