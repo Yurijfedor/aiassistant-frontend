@@ -15,9 +15,9 @@ export function askAiStream(
 
   fetch(backendUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    // headers: {
+    //   "Content-Type": "application/json",
+    // },
     body: JSON.stringify({ input: prompt }),
     signal: controller.signal,
   })
