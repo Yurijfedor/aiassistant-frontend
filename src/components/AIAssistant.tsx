@@ -18,7 +18,10 @@ function AiAssistant() {
       onChunk: (chunk) => {
         setOutput((prev) => prev + chunk);
       },
-      onDone: () => setStatus("done"),
+      onDone: () => {
+        console.log("✅ STREAM DONE");
+        setStatus("done");
+      },
       onError: () => setStatus("error"),
     });
 

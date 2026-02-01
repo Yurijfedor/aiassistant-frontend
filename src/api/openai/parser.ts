@@ -46,7 +46,7 @@ export function parseOpenAIStreamResponse(
 
         if (parsed.type === "response.completed") {
           safeDone();
-          cancel();
+          // cancel();
           return;
         }
       } catch (e) {
@@ -60,6 +60,7 @@ export function parseOpenAIStreamResponse(
       while (!cancelled) {
         const { done, value } = await reader.read();
         if (done) {
+          // 🔥 КЛЮЧОВИЙ ФІКС
           safeDone();
           break;
         }
