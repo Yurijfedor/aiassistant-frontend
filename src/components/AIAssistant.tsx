@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { askAiStream } from "../api/openai/stream";
 import type { AIStatus } from "../api/openai/types";
 import type { StreamController } from "../api/openai/types";
+import { runFetchStream } from "../stream-lab/fetchStream";
 
 function AiAssistant() {
   const [question, setQuestion] = useState("");
@@ -34,31 +35,37 @@ function AiAssistant() {
   }
 
   return (
-    <div>
-      <h2>AI Assistant</h2>
-      <input
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Ask something ..."
-      />
-      <button onClick={handleAsk} disabled={status === "streaming"}>
-        Ask AI
-      </button>
-      {status === "streaming" && (
-        <button onClick={handleCancel} disabled={status !== "streaming"}>
-          Cancel
+    <>
+      <div>
+        <h2>AI Assistant</h2>
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Ask something ..."
+        />
+        <button onClick={handleAsk} disabled={status === "streaming"}>
+          Ask AI
         </button>
-      )}
-      {status === "streaming" && <p>🧠 AI is thinking...</p>}
-      {status === "streaming" && <pre>{output}</pre>}
-      {status === "done" && (
-        <p>
-          ✅ Done: <br />
-          {output}
-        </p>
-      )}
-      {status === "error" && <p style={{ color: "red" }}>❌ Error</p>}
-    </div>
+        {status === "streaming" && (
+          <button onClick={handleCancel} disabled={status !== "streaming"}>
+            Cancel
+          </button>
+        )}
+        {status === "streaming" && <p>🧠 AI is thinking...</p>}
+        {status === "streaming" && <pre>{output}</pre>}
+        {status === "done" && (
+          <p>
+            ✅ Done: <br />
+            {output}
+          </p>
+        )}
+        {status === "error" && <p style={{ color: "red" }}>❌ Error</p>}
+      </div>
+      <div>
+        <h2>Fetch Stream Test</h2>
+        <button onClick={runFetchStream}>Run Fetch Stream</button>
+      </div>
+    </>
   );
 }
 export default AiAssistant;
